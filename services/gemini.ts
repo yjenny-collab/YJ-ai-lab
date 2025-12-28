@@ -22,28 +22,33 @@ export const getGeminiChatResponse = async (
 
 export const discoverEvents = async (query: string): Promise<{ events: EventItem[], sources: GroundingSource[] }> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  // Calculate the end of the next month
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+  const endOfNextMonthStr = nextMonth.toISOString().split('T')[0];
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: `Today is ${today}. 
+    contents: `Today is ${todayStr}. Current location: Paris, France.
     
-    MISSION: You are a "Global-Local Parisian Connector". Your job is to help international students who feel isolated find a vibrant social life. 
+    MISSION: You are a "Deep Local Parisian Scout" for international students. You must find events that are usually hidden behind language barriers or local cliquey circles.
     
-    TASK: Find an EXHAUSTIVE and DIVERSE list of upcoming events in Paris and suburbs (next 14 days). 
+    TASK: Find an EXHAUSTIVE and DIVERSE list of upcoming events in Paris and its suburbs from ${todayStr} until ${endOfNextMonthStr}.
     User Query: ${query}
     
-    SEARCH SCOPE (MUST INCLUDE BOTH):
-    1. INTERNATIONAL/STUDENT MAIN-STREAM: Erasmus parties, ESN (Erasmus Student Network) events, Polyglot mixers, International Party Paris, Meetup groups for expats, and University student association galas.
-    2. DEEP LOCAL FRENCH NICHE: Shotgun.live (Techno/House), Resident Advisor, Sortiraparis (Culture/Art), Paris Bouge, and local "Brocantes" or "Vernissages".
+    SEARCH SCOPE:
+    1. INTERNATIONAL & STUDENT: Erasmus parties, ESN gatherings, polyglot mixers, university association events, and international mixers.
+    2. DEEP LOCAL FRENCH: Niche soirées on Shotgun.live, Resident Advisor, vernissages (art openings), brocantes, and underground gatherings in the 93/94/92 suburbs.
     
-    CURATION & TRANSLATION:
-    - Many events are only in French. TRANSLATE them into English.
-    - provide "Local Intelligence" for every event.
-    - Set 'isAccessible' to TRUE for: Events specifically for international students, Erasmus parties, or central events with English info. Label these as "Safe Bet".
-    - Set 'isAccessible' to FALSE for: Underground suburban parties, niche French-speaking art gatherings, or "members only" feel clubs. Label these as "Deep Local".
+    CURATION RULES:
+    - Translate French descriptions to English.
+    - Provide "Local Intelligence": Tips for newcomers on how to find the venue or fit in.
+    - Set 'isAccessible' to TRUE for beginner-friendly/Erasmus/International events. Label as "Safe Bet".
+    - Set 'isAccessible' to FALSE for underground/suburb/cliquey events. Label as "Deep Local".
     
-    RESPONSE FORMAT: Return a large JSON array of event objects.`,
+    RESPONSE FORMAT: Large JSON array of event objects.`,
     config: {
       tools: [{ googleSearch: {} }],
       responseMimeType: "application/json",
@@ -66,7 +71,7 @@ export const discoverEvents = async (query: string): Promise<{ events: EventItem
                 description: { type: Type.STRING },
                 vibe: { type: Type.STRING },
                 isAccessible: { type: Type.BOOLEAN, description: "True for international/beginner friendly events." },
-                accessibilityReason: { type: Type.STRING, description: "Detailed tip for a non-French speaker on how to enjoy this specific event." }
+                accessibilityReason: { type: Type.STRING, description: "Specific advice for a non-local student." }
               },
               required: ["id", "title", "category", "date", "isoDate", "location", "description", "vibe", "isAccessible"]
             }
@@ -85,7 +90,7 @@ export const discoverEvents = async (query: string): Promise<{ events: EventItem
     const sources: GroundingSource[] = response.candidates?.[0]?.groundingMetadata?.groundingChunks
       ?.filter(chunk => chunk.web)
       ?.map(chunk => ({
-        title: chunk.web?.title || "Event Source",
+        title: chunk.web?.title || "Event Link",
         uri: chunk.web?.uri || "#"
       })) || [];
 
