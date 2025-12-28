@@ -1,0 +1,7 @@
+{
+  "name": "L'Escale Paris",
+  "description": "The ultimate companion for international students in Paris. Discover parties, events, social clubs, and navigate student life with AI-powered Parisian expertise.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
